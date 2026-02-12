@@ -1,0 +1,70 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  level         Int       @default(1)
+  xp            Int       @default(0)
+  currentStreak Int       @default(0)
+  lastStudyDay  DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  answers       UserAnswer[]
+}
+
+model Subject {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  parentId  Int?
+  parent    Subject?  @relation("SubjectHierarchy", fields: [parentId], references: [id])
+  children  Subject[] @relation("SubjectHierarchy")
+  
+  questions Question[]
+}
+
+model Question {
+  id            String    @id @default(cuid())
+  statement     String
+  alternatives  Json      // Array of objects: { id, text }
+  correctAnswer String    // The ID of the correct alternative (e.g. "A")
+  explanation   String
+  difficulty    String    // EASY, MEDIUM, HARD
+  sourceContext String?
+  isFlagged     Boolean   @default(false)
+  
+  subjectId     Int
+  subject       Subject   @relation(fields: [subjectId], references: [id])
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  answers       UserAnswer[]
+}
+
+model UserAnswer {
+  id               String   @id @default(cuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id])
+  questionId       String
+  question         Question @relation(fields: [questionId], references: [id])
+  selectedOptionId String
+  isCorrect        Boolean
+  timeInSeconds    Int
+  createdAt        DateTime @default(now())
+
+  @@index([userId])
+  @@index([questionId])
+  @@index([createdAt])
+}
